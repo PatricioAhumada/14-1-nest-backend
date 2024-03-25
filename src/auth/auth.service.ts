@@ -5,11 +5,12 @@ import { JwtService } from '@nestjs/jwt';
 
 import * as bcryptjs from 'bcryptjs';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-user.dto';
+import { CreateUserDto , UpdateAuthDto , LoginDto , RegisterUserDto } from './dto';
 import { User } from './entities/user.entity';
-import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './interfaces/jwt-payload';
+import { LoginResponse } from './interfaces/login-response';
+import { RegisterResponse } from './interfaces/register-response';
+import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +44,7 @@ export class AuthService {
     }
   }
 
-  async login( logindto : LoginDto ){
+  async login( logindto : LoginDto ) :Promise<LoginResponse>{
     //console.log({ logindto })
     const { email , password } = logindto;    
     const user = await this.userModel.findOne({email:email})
@@ -62,24 +63,34 @@ export class AuthService {
       user : rest,
       token: this.getJwtToken({ id: user.id })
     };
+  }
 
+  async register( registerUserDto : RegisterUserDto ): Promise<RegisterResponse>{
 
-    /**
-     * User { _id , name , email , roles , }
-     * Token
-     */
+    const user = await this.create( registerUserDto );
+    console.log();
+    return {
+      user : user,
+      token: this.getJwtToken({ id: user._id })
+    };
   }
 
   getJwtToken( payload : JwtPayload ){
     const token = this.jwtService.sign(payload);
     return token;
   }
-
-
-
-  findAll() {
-    return `This action returns all auth`;
+  
+  findAll(): Promise<User[]> {
+    return this.userModel.find();
   }
+
+  async findUserById( id:string ){
+    const user = await this.userModel.findById( id )
+    const { password , ...rest } = user.toJSON();
+    return rest;
+  }
+
+
 
   findOne(id: number) {
     return `This action returns a #${id} auth`;
